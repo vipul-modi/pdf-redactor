@@ -76,9 +76,9 @@ class RedactorApp(QMainWindow):
 
         toolbar.addSeparator()
 
-        # Zoom
+        # Zoom — multiple shortcuts so Ctrl+= and Ctrl++ both work
         zoom_in_action = QAction("Zoom +", self)
-        zoom_in_action.setShortcut(QKeySequence.ZoomIn)
+        zoom_in_action.setShortcuts([QKeySequence.ZoomIn, QKeySequence("Ctrl+=")])
         zoom_in_action.triggered.connect(self._viewer.zoom_in)
         toolbar.addAction(zoom_in_action)
 

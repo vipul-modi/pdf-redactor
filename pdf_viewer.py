@@ -181,6 +181,18 @@ class PdfViewer(QGraphicsView):
         count = sum(1 for item in self._scene.items() if isinstance(item, RedactionRect))
         self.redaction_count_changed.emit(count)
 
+    # --- Ctrl+scroll wheel zoom ---
+
+    def wheelEvent(self, event) -> None:
+        if event.modifiers() == Qt.ControlModifier:
+            if event.angleDelta().y() > 0:
+                self.zoom_in()
+            elif event.angleDelta().y() < 0:
+                self.zoom_out()
+            event.accept()
+        else:
+            super().wheelEvent(event)
+
     # --- Mouse events for rectangle drawing ---
 
     def mousePressEvent(self, event) -> None:
