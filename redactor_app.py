@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QMessageBox, QStatusBar, QSizePolicy,
 )
 from PyQt5.QtGui import QIcon, QKeySequence, QImage, QPainter
-from PyQt5.QtPrintSupport import QPrinter, QPrintDialog
+from PyQt5.QtPrintSupport import QPrinter, QPrintPreviewDialog
 from PyQt5.QtCore import Qt
 import fitz
 
@@ -174,20 +174,25 @@ class RedactorApp(QMainWindow):
             self._status_bar.showMessage(f"Saved to {path}", 5000)
 
     def _print_document(self) -> None:
-        """Print the current (possibly redacted) PDF via system print dialog."""
+        """Print the current (possibly redacted) PDF via preview dialog."""
         doc = self._viewer.document
         if not doc:
             QMessageBox.warning(self, "No Document", "Open a PDF first.")
             return
 
         printer = QPrinter(QPrinter.HighResolution)
-        dialog = QPrintDialog(printer, self)
-        if dialog.exec_() != QPrintDialog.Accepted:
+        preview = QPrintPreviewDialog(printer, self)
+        preview.paintRequested.connect(self._render_for_print)
+        preview.exec_()
+
+    def _render_for_print(self, printer: QPrinter) -> None:
+        """Render all PDF pages to the printer."""
+        doc = self._viewer.document
+        if not doc:
             return
 
         painter = QPainter()
         if not painter.begin(printer):
-            QMessageBox.warning(self, "Print Error", "Could not start printing.")
             return
 
         try:
@@ -195,13 +200,11 @@ class RedactorApp(QMainWindow):
                 if i > 0:
                     printer.newPage()
                 page = doc[i]
-                # Render at high DPI for print quality
                 dpi_scale = printer.resolution() / 72.0
                 mat = fitz.Matrix(dpi_scale, dpi_scale)
                 pix = page.get_pixmap(matrix=mat)
                 img = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
 
-                # Scale to fit the printable area
                 page_rect = printer.pageRect()
                 scaled = img.scaled(
                     page_rect.width(), page_rect.height(),
